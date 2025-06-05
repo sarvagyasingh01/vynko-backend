@@ -134,5 +134,81 @@ const updateProduct = async (req, res) => {
   }
 };
 
+const getAllProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.limit) || 10;
+    const searchTerm = req.query.searchTerm || "";
 
-export { addProduct, updateProduct };
+    const matchStage = {
+      $and: [
+        !!searchTerm
+          ? {
+              $or: [
+                { name: { $regex: searchTerm, $options: "i" } },
+                { productId: { $regex: searchTerm, $options: "i" } },
+              ],
+            }
+          : {},
+      ],
+    };
+
+    const countPipeline = [
+      { $match: matchStage },
+      { $count: "totalDocs" },
+    ];
+
+    const dataPipeline = [
+      { $match: matchStage },
+      { $sort: { createdAt: 1 } },
+      { $skip: (page - 1) * pageSize },
+      { $limit: pageSize },
+      {
+        $project: {
+          createdAt: 0,
+          updatedAt: 0,
+          __v: 0,
+        },
+      },
+    ];
+
+    const [countResult, dataResult] = await Promise.all([
+      Product.aggregate(countPipeline),
+      Product.aggregate(dataPipeline),
+    ]);
+
+    const totalItems = countResult.length > 0 ? countResult[0].totalDocs : 0;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    const hasNextPage = page < totalPages;
+    const nextPage = hasNextPage ? page + 1 : null;
+    const hasPrevPage = page > 1;
+    const prevPage = hasPrevPage ? page - 1 : null;
+    const pagingCounter = (page - 1) * pageSize + 1;
+
+    const response = {
+      totalDocs: totalItems,
+      limit: pageSize,
+      totalPages,
+      page,
+      pagingCounter,
+      hasPrevPage,
+      hasNextPage,
+      prevPage,
+      nextPage,
+      docs: dataResult,
+    };
+
+    if (dataResult.length > 0) {
+      return res.status(200).json({ data: response });
+    } else {
+      return res.status(400).json({ message: "No products found" });
+    }
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+
+export { addProduct, updateProduct, getAllProducts };

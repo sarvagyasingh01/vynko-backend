@@ -5,7 +5,7 @@ import { getIstTime } from "../../config/getTime.js";
 const schema = new mongoose.Schema(
   {
     // username: { type: String, required: true, unique: true },
-    // password: { type: String, required: true },
+    password: { type: String, required: true },
     email: { type: String },
     mobile: { type: String },
     userId: {

@@ -125,7 +125,7 @@ const validateMobileAPI = async (req, res) => {
     // normalizedMobile.length === 12 && normalizedMobile.startsWith('91') ? normalizedMobile.slice(2) : normalizedMobile,
   ];
   const account = await Users.findOne({
-    mobile: { $in: variations }
+    mobile: { $in: variations },
     // mobile: mobile
   });
   if (mobile.length == 0) {
@@ -170,9 +170,9 @@ const registerAPI = async (req, res) => {
     let mobile_exist = await Users.findOne({ mobile: post.mobile });
 
     const id = await GenerateUserId();
-    
-    if(!id || id==-1){
-      console.log("Error generating user id")
+
+    if (!id || id == -1) {
+      console.log("Error generating user id");
       return r.rest(res, false, "Internal Server Error");
     }
 
@@ -182,7 +182,7 @@ const registerAPI = async (req, res) => {
       return r.rest(res, false, "Mobile already exist");
     } else if (!email_exist && !mobile_exist) {
       // try {
-      post.userId = id
+      post.userId = id;
       post.isEmailVerified = true;
       post.registerVia = req.body.androidApp ? "app-email" : "website-email";
       post.join_date = new Date(getIstTime().date).getTime();
@@ -423,9 +423,14 @@ const loginAPI = async (req, res) => {
         );
       } else {
         const token = createJWT({
-          email: await account.email,
-          mobile: await account.mobile,
-          id: await account._id,
+          userId: await account.userId,
+        });
+
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 24 * 60 * 60 * 1000,
         });
 
         return r.rest(res, true, "Login Success!", {
@@ -433,12 +438,67 @@ const loginAPI = async (req, res) => {
           first_name: account.first_name,
           token: token,
           full_name: `${account.first_name} ${account.last_name}`,
-          country: account.country ? account.country : "India",
         });
       }
     }
   }
 };
 
+const adminLoginAPI = async (req, res) => {
+  const { email, password } = req.body;
 
-export { sendOTP, checkOtpMatchAPI, registerAPI, mobileRegister, loginAPI, validateMobileAPI };
+  if (!email || !password) {
+    return res.status(400).json({
+      message: "E-Mail and Password are required!",
+    });
+  }
+
+  try {
+    const account = await Users.findOne({ email: email });
+
+    if (!account) {
+      return res.status(404).json({
+        message: "Account not found!",
+      });
+    }
+
+    if (!verifyPassword(password, account.password)) {
+      return res.status(403).json({
+        message: "Incorrect E-Mail or Password!",
+      });
+    }
+
+    const token = createJWT({
+      userId: await account.userId,
+    });
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return r.rest(res, true, "Login Success!", {
+      username: account.username,
+      first_name: account.first_name,
+      token: token,
+      full_name: `${account.first_name} ${account.last_name}`,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+export {
+  sendOTP,
+  checkOtpMatchAPI,
+  registerAPI,
+  mobileRegister,
+  loginAPI,
+  validateMobileAPI,
+  adminLoginAPI,
+};

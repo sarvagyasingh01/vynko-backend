@@ -5,7 +5,7 @@ import {
   verifyUser,
 } from "../middleware/AuthMiddleware.js";
 // import { PrivateAPI } from "../controllers/index.js";
-import { addProduct, updateProduct } from "../controllers/PrivateControllers.js";
+import { addProduct, getAllProducts, updateProduct } from "../controllers/PrivateControllers.js";
 
 const router = new express.Router();
 
@@ -15,6 +15,7 @@ router.use(middleware);
 
 router.post("/add-product", addProduct)
 router.post("/update-product", updateProduct)
+router.get("/get-products", getAllProducts)
 
 
 export {router};

@@ -42,5 +42,6 @@ router.post("/login", PublicAPI.loginAPI);
 router.get("/validate_mobile", PublicAPI.validateMobileAPI);
 // router.post("/check-email-otp-match", checkEmailOtpMatchAPI);
 
+router.post("/admin-login", PublicAPI.adminLoginAPI);
 
 export { router };

@@ -33,12 +33,12 @@ const ProductSchema = new Schema(
       // required: true,
     },
     sizes: {
-      XS: { type: Number, default: 0 },
       S: { type: Number, default: 0 },
       M: { type: Number, default: 0 },
       L: { type: Number, default: 0 },
       XL: { type: Number, default: 0 },
       XXL: { type: Number, default: 0 },
+      XXXL: { type: Number, default: 0 },
     },
     colors: [
       {

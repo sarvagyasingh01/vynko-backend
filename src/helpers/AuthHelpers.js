@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import Config from "../../config.js";
 const env = process.env.ENVIRONMENT || "development";
 
-function encryptPassword(plainPassword, saltRounds = 10) {
+function encryptPassword(plainPassword, saltRounds = 12) {
   return bcrypt.hashSync(plainPassword, saltRounds);
 }
 
