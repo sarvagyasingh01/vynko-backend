@@ -1,4 +1,4 @@
-import { adminLoginAPI, checkOtpMatchAPI, loginAPI, registerAPI, sendOTP, validateMobileAPI } from "./PublicAccessControllers.js";
+import { adminLoginAPI, checkOtpMatchAPI, getAllProducts, loginAPI, registerAPI, sendOTP, validateMobileAPI } from "./PublicAccessControllers.js";
 
 const PublicAPI = {
   sendOtpAPI: sendOTP,
@@ -7,6 +7,7 @@ const PublicAPI = {
   loginAPI: loginAPI,
   validateMobileAPI: validateMobileAPI,
   adminLoginAPI: adminLoginAPI,
+  getAllProductsAPI: getAllProducts,
 };
 
 export { PublicAPI };

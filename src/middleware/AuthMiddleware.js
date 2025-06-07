@@ -20,8 +20,8 @@ const auth_jwt = async (req, res, next) => {
 
 const verifyAdmin = async (req, res, next) => {
   try {
-    const requester = req.auth.mobile; // Assuming req.auth contains authenticated user details
-    const requesterAccount = await Users.findOne({ mobile: requester });
+    const requester = req.auth.userId; // Assuming req.auth contains authenticated user details
+    const requesterAccount = await Users.findOne({ userId: requester });
 
     // Check if the requester is an admin
     if (requesterAccount?.role === "admin") {
@@ -47,9 +47,9 @@ const verifyAdmin = async (req, res, next) => {
 
 const verifyUser = async (req, res, next) => {
   try {
-    const requester = req.auth.username;
+    const requester = req.auth.userId;
     // console.log({ requester });
-    const requesterAccount = await Users.findOne({ username: requester });
+    const requesterAccount = await Users.findOne({ userId: requester });
     if (requesterAccount?.role === "user") {
       // if (requesterAccount.isDeleted) {
       //   return res.status(403).json({

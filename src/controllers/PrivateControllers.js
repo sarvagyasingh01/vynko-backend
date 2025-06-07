@@ -1,6 +1,8 @@
 import { GenerateProductId } from "../config/generateProductId.js";
 import Cart from "../models/cart/cartSchema.js";
+import { Users } from "../models/index.js";
 import { Product } from "../models/product/productSchema.js";
+import moment from "moment"
 
 const addProduct = async (req, res) => {
   const { name, price, description, colors, stock, sizes } = req.body;
@@ -29,11 +31,6 @@ const addProduct = async (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Product description is required" });
-  }
-  if (!colors) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Colors of the product are required" });
   }
 
   if (!stock) {
@@ -209,6 +206,68 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const userStats = async (req, res) => {
+  try {
+    const now = moment().endOf("day");
+    const startOfToday = moment().startOf("day");
+    const oneWeekAgo = moment().subtract(6, "days").startOf("day");
+    const oneMonthAgo = moment().subtract(1, "months").startOf("day");
+
+    // Total users
+    const totalUsers = await Users.countDocuments();
+
+    // Users by day for last 7 days
+    const dailyStats = await Users.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: oneWeekAgo.toDate(), $lte: now.toDate() },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Fill missing days in reverse order: today, yesterday, ..., 6 days ago
+    const usersLast7Days = [];
+    for (let i = 0; i < 7; i++) {
+      const day = moment().subtract(i, "days").format("YYYY-MM-DD");
+      const stat = dailyStats.find((d) => d._id === day);
+      usersLast7Days.push({ date: day, count: stat ? stat.count : 0 });
+    }
+
+    // Total users last week
+    const totalLastWeek = await Users.countDocuments({
+      createdAt: {
+        $gte: oneWeekAgo.toDate(),
+        $lte: now.toDate(),
+      },
+    });
+
+    // Total users last month
+    const totalLastMonth = await Users.countDocuments({
+      createdAt: {
+        $gte: oneMonthAgo.toDate(),
+        $lte: now.toDate(),
+      },
+    });
+
+    res.json({
+      totalUsers,
+      usersLast7Days,
+      totalLastWeek,
+      totalLastMonth,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+};
 
 
-export { addProduct, updateProduct, getAllProducts };
+export { addProduct, updateProduct, getAllProducts, userStats };
