@@ -1,5 +1,6 @@
 import Cart from "../models/cart/cartSchema.js";
 import { Product } from "../models/product/productSchema.js";
+import { Review } from "../models/product/reviewSchema.js";
 
 const createCart = async (req, res) => {
   const { userId, newItems } = req.body;
@@ -153,4 +154,80 @@ const updateCart = async (req, res) => {
   }
 };
 
-export { createCart, updateCart };
+const createReview = async (req, res) => {
+  const { productId, rating, comment } = req.body;
+
+  if (!productId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Product Id is required" });
+  }
+  if (!rating) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Rating is required" });
+  }
+  if (rating < 1 || rating > 5) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Enter rating between 1 and 5" });
+  }
+
+  try {
+    const product = await Product.findOne({ productId });
+
+    if (!product) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Product not found!" });
+    }
+
+    const exists = await Review.findOne({userId: req.auth.userId, productId})
+
+    if (exists) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User can write one review only" });
+    }
+
+    const newReview = new Review({
+      userId: req.auth.userId,
+      productId,
+      rating,
+    });
+
+    if(comment){
+      newReview.comment = comment;
+      newReview.empty = false;
+    }
+
+    await newReview.save();
+
+    const result = await Review.aggregate([
+      { $match: { productId: productId } },
+      {
+        $group: {
+          _id: "$productId",
+          avgRating: { $avg: "$rating" },
+        },
+      },
+    ]);
+
+    const averageRating = result[0]?.avgRating || 0;
+    product.ratings = averageRating;
+    product.numReviews += 1;
+    await product.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Review created successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+export { createCart, updateCart, createReview};

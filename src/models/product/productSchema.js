@@ -8,15 +8,15 @@ const ProductSchema = new Schema(
     productId: {
       type: String,
       unique: true,
-      // required: true,
+      required: true,
     },
     name: {
       type: String,
-      // required: true,
+      required: true,
     },
     description: {
       type: String,
-      // required: true,
+      required: true,
     },
     price: {
       type: Number,
@@ -47,7 +47,7 @@ const ProductSchema = new Schema(
     ],
     stock: {
       type: Number,
-      // required: true,
+      required: true,
       default: 0,
     },
     ratings: {
@@ -58,6 +58,10 @@ const ProductSchema = new Schema(
       type: Number,
       default: 0,
     },
+    active: {
+      type: Boolean,
+      default: true
+    }
   },
   { timestamps: true }
 );

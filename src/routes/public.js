@@ -16,7 +16,7 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               phone:
+ *               mobile:
  *                 type: string
  *                 example: "9876543210"
  *     responses:
@@ -38,7 +38,7 @@ router.post("/send-otp", PublicAPI.sendOtpAPI);
  *           schema:
  *             type: object
  *             properties:
- *               phone:
+ *               mobile:
  *                 type: string
  *               otp:
  *                 type: string
