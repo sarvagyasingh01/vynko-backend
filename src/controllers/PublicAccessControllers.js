@@ -10,6 +10,7 @@ import { Users } from "../models/users/UsersSchema.js";
 import { getIstTime } from "../config/getTime.js";
 import GenerateUserId from "../config/generateUserId.js";
 import { Product } from "../models/product/productSchema.js";
+import axios from "axios";
 
 const sendOTP = async (req, res) => {
   let post = req.body;
@@ -71,6 +72,15 @@ const sendOTP = async (req, res) => {
     // const response = {
     //   data: result?.data,
     // };
+    const response = await axios.get('https://www.fast2sms.com/dev/bulkV2', {
+      params: {
+        authorization: 'zf8GmUYMrSH7y61LvwuFOQVD5RjIAp0oaJskT34cZ9lXi2gKxWhaXyjbfRNI9qSrAHQopDezuwBPWVL0',
+        variables_values: randomOTP,
+        route: 'otp',
+        numbers: 9310158316,
+      },
+    });
+
     return r.rest(
       res,
       true,

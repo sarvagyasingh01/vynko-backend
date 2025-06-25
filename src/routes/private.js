@@ -10,6 +10,7 @@ import {
   updateProduct,
   userStats,
 } from "../controllers/PrivateControllers.js";
+import upload from "../middleware/upload.js";
 
 const router = new express.Router();
 
@@ -90,7 +91,7 @@ router.use(middleware);
  *       401:
  *         description: Unauthorized - Invalid or missing X-Auth-Token
  */
-router.post("/add-product", addProduct);
+router.post("/add-product", upload.array('images', 5), addProduct);
 
 /**
  * @swagger

@@ -19,8 +19,18 @@ import {
   // chatRouter,
 } from "./src/routes/index.js";
 
+import cors from "cors";
+
 // Middleware
-// app.use(cors());
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    
+  ],
+  optionsSuccessStatus: 200,
+  credentials: true // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+app.use(cors(corsOptions));
 
 
 

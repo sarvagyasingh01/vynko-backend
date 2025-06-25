@@ -3,14 +3,16 @@ import Cart from "../models/cart/cartSchema.js";
 import { Users } from "../models/index.js";
 import { Product } from "../models/product/productSchema.js";
 import moment from "moment"
+import { uploadProductImage } from "../util/coudinary.js";
 
 const addProduct = async (req, res) => {
   const { name, price, description, colors, stock, sizes } = req.body;
+  const images = req.files;
 
   const parsedSizes = {};
   let count = 0;
 
-  if (sizes || Object.keys(sizes).length > 0) {
+  if (sizes && Object.keys(sizes).length > 0) {
     ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
       parsedSizes[size] = parseInt(req.body.sizes?.[size] || 0, 10);
       count += parseInt(req.body.sizes?.[size] || 0, 10);
@@ -38,14 +40,32 @@ const addProduct = async (req, res) => {
       .status(400)
       .json({ success: false, message: "Mention the total amount of stock" });
   }
-  if (stock != count) {
-    return res.status(400).json({
-      success: false,
-      message: `The total stock is ${stock} and total quantity of all sizes is ${count}!`,
-    });
-  }
+  // if (stock != count) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: `The total stock is ${stock} and total quantity of all sizes is ${count}!`,
+  //   });
+  // }
 
   try {
+    const uploadedImages = [];
+
+    for (const file of images) {
+      try {
+        const result = await uploadProductImage(file.buffer);
+        uploadedImages.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+        });
+      } catch (error) {
+        console.error(`Image upload failed for one of the files:`, error);
+        return res.status(500).json({
+          success: false,
+          message: "One or more image uploads failed. Please try again.",
+        });
+      }
+    }
+
     const id = await GenerateProductId();
 
     const newProduct = new Product({
@@ -56,6 +76,7 @@ const addProduct = async (req, res) => {
       colors: colors,
       stock: stock,
       sizes: parsedSizes,
+      images: uploadedImages,
     });
 
     const savedProduct = await newProduct.save();
