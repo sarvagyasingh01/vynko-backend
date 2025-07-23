@@ -2,18 +2,18 @@ import { GenerateProductId } from "../config/generateProductId.js";
 import Cart from "../models/cart/cartSchema.js";
 import { Users } from "../models/index.js";
 import { Product } from "../models/product/productSchema.js";
-import moment from "moment"
+import moment from "moment";
 import { uploadProductImage } from "../util/coudinary.js";
 
 const addProduct = async (req, res) => {
-  const { name, price, description, colors, stock, sizes } = req.body;
+  const { name, price, discountPrice, description, stock, sizes } = req.body;
   const images = req.files;
 
   const parsedSizes = {};
   let count = 0;
 
   if (sizes && Object.keys(sizes).length > 0) {
-    ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
+    ["S", "M", "L", "XL", "XXL", "XXXL"].forEach((size) => {
       parsedSizes[size] = parseInt(req.body.sizes?.[size] || 0, 10);
       count += parseInt(req.body.sizes?.[size] || 0, 10);
     });
@@ -28,6 +28,11 @@ const addProduct = async (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Product price is required" });
+  }
+  if (!discountPrice) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Discount price is required" });
   }
   if (!description) {
     return res
@@ -73,7 +78,7 @@ const addProduct = async (req, res) => {
       name: name,
       description: description,
       price: price,
-      colors: colors,
+      discountPrice: discountPrice,
       stock: stock,
       sizes: parsedSizes,
       images: uploadedImages,
@@ -97,7 +102,10 @@ const addProduct = async (req, res) => {
 };
 
 const updateProduct = async (req, res) => {
-  const { id, name, price, description, colors, stock, sizes } = req.body;
+  const { id, name, price, discountPrice, description, stock, sizes } =
+    req.body;
+  const images = req.files;
+
 
   if (!id) {
     return res
@@ -109,18 +117,18 @@ const updateProduct = async (req, res) => {
   let count = 0;
 
   if (sizes || Object.keys(sizes).length > 0) {
-    ["XS", "S", "M", "L", "XL", "XXL"].forEach((size) => {
+    ["S", "M", "L", "XL", "XXL", "XXXL"].forEach((size) => {
       parsedSizes[size] = parseInt(req.body.sizes?.[size] || 0, 10);
       count += parseInt(req.body.sizes?.[size] || 0, 10);
     });
   }
 
-  if (stock != count) {
-    return res.status(400).json({
-      success: false,
-      message: `The total stock is ${stock} and total quantity of all sizes is ${count}!`,
-    });
-  }
+  // if (stock != count) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: `The total stock is ${stock} and total quantity of all sizes is ${count}!`,
+  //   });
+  // }
 
   try {
     const product = await Product.findOne({ productId: id });
@@ -131,12 +139,33 @@ const updateProduct = async (req, res) => {
         .json({ success: false, message: "Product not found!" });
     }
 
+    const uploadedImages = [];
+
+    if (images) {
+      for (const file of images) {
+        try {
+          const result = await uploadProductImage(file.buffer);
+          uploadedImages.push({
+            url: result.secure_url,
+            public_id: result.public_id,
+          });
+        } catch (error) {
+          console.error(`Image upload failed for one of the files:`, error);
+          return res.status(500).json({
+            success: false,
+            message: "One or more image uploads failed. Please try again.",
+          });
+        }
+      }
+    }
+
     if (name !== undefined) product.name = name;
     if (price !== undefined) product.price = price;
+    if (discountPrice !== undefined) product.discountPrice = discountPrice;
     if (description !== undefined) product.description = description;
-    if (colors !== undefined) product.colors = colors;
     if (stock !== undefined) product.stock = stock;
-    if (sizes !== undefined) product.sizes = sizes;
+    if (sizes !== undefined) product.sizes = parsedSizes;
+    if (images !== undefined) product.images = uploadedImages;
 
     await product.save();
 
@@ -157,24 +186,27 @@ const getAllProducts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.limit) || 10;
     const searchTerm = req.query.searchTerm || "";
+    const searchId = req.query.searchId || "";
 
-    const matchStage = {
-      $and: [
-        !!searchTerm
-          ? {
-              $or: [
-                { name: { $regex: searchTerm, $options: "i" } },
-                { productId: { $regex: searchTerm, $options: "i" } },
-              ],
-            }
-          : {},
-      ],
-    };
+    const matchConditions = [];
 
-    const countPipeline = [
-      { $match: matchStage },
-      { $count: "totalDocs" },
-    ];
+    if (searchTerm) {
+      matchConditions.push({
+        // name: { $regex: searchTerm, $options: "i" }, This condition is used to match the term anywhere in the string
+        name: { $regex: "^" + searchTerm, $options: "i" }, //This condition matches the term from the begining of the string
+      });
+    }
+
+    if (searchId) {
+      matchConditions.push({
+        productId: searchId,
+      });
+    }
+
+    const matchStage =
+      matchConditions.length > 0 ? { $and: matchConditions } : {};
+
+    const countPipeline = [{ $match: matchStage }, { $count: "totalDocs" }];
 
     const dataPipeline = [
       { $match: matchStage },
@@ -285,10 +317,45 @@ const userStats = async (req, res) => {
       totalLastMonth,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Server error");
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
+const changeProductStatus = async (req, res) => {
+  const { id } = req.body;
 
-export { addProduct, updateProduct, getAllProducts, userStats };
+  if (!id) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Product id is required" });
+  }
+
+  try {
+    const product = await Product.findOne({ productId: id });
+
+    if (!product) {
+      return res
+        .status(400)
+        .json({ success: false, message: "!Product Not Found" });
+    }
+
+    product.active = !product.active;
+    await product.save();
+
+    return res
+      .status(200)
+      .json({ message: "Product status changed successfully" });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export {
+  addProduct,
+  updateProduct,
+  getAllProducts,
+  userStats,
+  changeProductStatus,
+};

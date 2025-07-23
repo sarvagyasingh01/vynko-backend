@@ -7,7 +7,6 @@ const auth_jwt = async (req, res, next) => {
     r.rest(res, "Unauthorized Access! Auth token not found!");
   } else {
     let token = req.headers["x-auth-token"];
-    //console.log(token)
     let decoded = verifyJWT(token);
     if (decoded.status) {
       req.auth = decoded.data;

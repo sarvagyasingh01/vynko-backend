@@ -6,6 +6,7 @@ import {
 } from "../middleware/AuthMiddleware.js";
 import {
   addProduct,
+  changeProductStatus,
   getAllProducts,
   updateProduct,
   userStats,
@@ -204,5 +205,7 @@ router.get("/get-products", getAllProducts);
  *         description: Unauthorized - Invalid or missing X-Auth-Token
  */
 router.get("/get-user-stats", userStats);
+
+router.post("/change-product-status", changeProductStatus)
 
 export { router };

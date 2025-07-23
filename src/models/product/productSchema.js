@@ -22,6 +22,10 @@ const ProductSchema = new Schema(
       type: Number,
       required: true,
     },
+    discountPrice: {
+      type: Number,
+      required: true,
+    },
     images: [
       {
         url: String,
