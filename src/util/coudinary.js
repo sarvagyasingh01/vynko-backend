@@ -39,3 +39,7 @@ export const uploadProductImage = (fileBuffer) => {
     }
   });
 };
+
+export const deleteProductImage = async (public_id) => {
+  return cloudinary.uploader.destroy(public_id);
+};

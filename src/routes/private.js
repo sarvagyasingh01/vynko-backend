@@ -7,6 +7,8 @@ import {
 import {
   addProduct,
   changeProductStatus,
+  deleteProduct,
+  editProductImages,
   getAllProducts,
   updateProduct,
   userStats,
@@ -207,5 +209,10 @@ router.get("/get-products", getAllProducts);
 router.get("/get-user-stats", userStats);
 
 router.post("/change-product-status", changeProductStatus)
+
+router.post("/delete-product", deleteProduct)
+
+router.post("/update-product-images/:productId", upload.array("images", 5), editProductImages);
+
 
 export { router };

@@ -3,7 +3,7 @@ import Cart from "../models/cart/cartSchema.js";
 import { Users } from "../models/index.js";
 import { Product } from "../models/product/productSchema.js";
 import moment from "moment";
-import { uploadProductImage } from "../util/coudinary.js";
+import { deleteProductImage, uploadProductImage } from "../util/coudinary.js";
 
 const addProduct = async (req, res) => {
   const { name, price, discountPrice, description, stock, sizes } = req.body;
@@ -29,22 +29,17 @@ const addProduct = async (req, res) => {
       .status(400)
       .json({ success: false, message: "Product price is required" });
   }
-  if (!discountPrice) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Discount price is required" });
-  }
   if (!description) {
     return res
       .status(400)
       .json({ success: false, message: "Product description is required" });
   }
 
-  if (!stock) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Mention the total amount of stock" });
-  }
+  // if (!stock) {
+  //   return res
+  //     .status(400)
+  //     .json({ success: false, message: "Mention the total amount of stock" });
+  // }
   // if (stock != count) {
   //   return res.status(400).json({
   //     success: false,
@@ -79,7 +74,7 @@ const addProduct = async (req, res) => {
       description: description,
       price: price,
       discountPrice: discountPrice,
-      stock: stock,
+      stock: count,
       sizes: parsedSizes,
       images: uploadedImages,
     });
@@ -105,7 +100,6 @@ const updateProduct = async (req, res) => {
   const { id, name, price, discountPrice, description, stock, sizes } =
     req.body;
   const images = req.files;
-
 
   if (!id) {
     return res
@@ -139,33 +133,33 @@ const updateProduct = async (req, res) => {
         .json({ success: false, message: "Product not found!" });
     }
 
-    const uploadedImages = [];
+    // const uploadedImages = [];
 
-    if (images) {
-      for (const file of images) {
-        try {
-          const result = await uploadProductImage(file.buffer);
-          uploadedImages.push({
-            url: result.secure_url,
-            public_id: result.public_id,
-          });
-        } catch (error) {
-          console.error(`Image upload failed for one of the files:`, error);
-          return res.status(500).json({
-            success: false,
-            message: "One or more image uploads failed. Please try again.",
-          });
-        }
-      }
-    }
+    // if (images) {
+    //   for (const file of images) {
+    //     try {
+    //       const result = await uploadProductImage(file.buffer);
+    //       uploadedImages.push({
+    //         url: result.secure_url,
+    //         public_id: result.public_id,
+    //       });
+    //     } catch (error) {
+    //       console.error(`Image upload failed for one of the files:`, error);
+    //       return res.status(500).json({
+    //         success: false,
+    //         message: "One or more image uploads failed. Please try again.",
+    //       });
+    //     }
+    //   }
+    // }
 
     if (name !== undefined) product.name = name;
     if (price !== undefined) product.price = price;
     if (discountPrice !== undefined) product.discountPrice = discountPrice;
     if (description !== undefined) product.description = description;
-    if (stock !== undefined) product.stock = stock;
+    if (stock !== undefined) product.stock = count;
     if (sizes !== undefined) product.sizes = parsedSizes;
-    if (images !== undefined) product.images = uploadedImages;
+    // if (images !== undefined) product.images = uploadedImages;
 
     await product.save();
 
@@ -175,6 +169,38 @@ const updateProduct = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  const { id } = req.body;
+
+  if (!id) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Product id is required" });
+  }
+
+  try {
+    const product = await Product.findOne({ productId: id });
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found!" });
+    }
+
+    await Product.deleteOne({ productId: id });
+
+    return res.status(200).json({
+      success: true,
+      message: "Product deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting product:", error);
     return res
       .status(500)
       .json({ success: false, message: "Internal server error" });
@@ -352,10 +378,69 @@ const changeProductStatus = async (req, res) => {
   }
 };
 
+const editProductImages = async (req, res) => {
+  const { productId } = req.params;
+  const images = req.files;
+
+  if (!images || images.length === 0) {
+    return res
+      .status(400)
+      .json({ success: false, message: "No images uploaded." });
+  }
+
+  try {
+    const product = await Product.findOne({ productId });
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found." });
+    }
+
+    // Delete old images from Cloudinary
+    const deletePromises = product.images.map((img) =>
+      deleteProductImage(img.public_id)
+    );
+    await Promise.all(deletePromises);
+
+    // Upload new images to Cloudinary
+    const uploadedImages = [];
+
+    for (const file of images) {
+      const result = await uploadProductImage(file.buffer);
+      uploadedImages.push({
+        url: result.secure_url,
+        public_id: result.public_id,
+      });
+    }
+
+    // Replace old images in the product
+    product.images = uploadedImages;
+    await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Product images updated successfully.",
+      data: {
+        product,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating product images:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
 export {
   addProduct,
   updateProduct,
   getAllProducts,
   userStats,
   changeProductStatus,
+  deleteProduct,
+  editProductImages,
+  
 };

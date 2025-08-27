@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
+import { type } from "os";
 
 const { Schema } = mongoose;
 
@@ -24,7 +25,6 @@ const ProductSchema = new Schema(
     },
     discountPrice: {
       type: Number,
-      required: true,
     },
     images: [
       {
@@ -65,6 +65,10 @@ const ProductSchema = new Schema(
     active: {
       type: Boolean,
       default: true
+    },
+    unitsSold: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }
