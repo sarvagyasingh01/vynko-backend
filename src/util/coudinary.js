@@ -40,6 +40,24 @@ export const uploadProductImage = (fileBuffer) => {
   });
 };
 
+export const uploadBannerImage = (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "banner_images" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      );
+
+      Readable.from(fileBuffer).pipe(stream);
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
 export const deleteProductImage = async (public_id) => {
   return cloudinary.uploader.destroy(public_id);
 };

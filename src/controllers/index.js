@@ -1,4 +1,4 @@
-import { adminLoginAPI, checkOtpMatchAPI, getAllProducts, loginAPI, registerAPI, sendOTP, validateMobileAPI } from "./PublicAccessControllers.js";
+import { adminLoginAPI, checkOtpMatchAPI, getAllProducts, getProduct, loginAPI, registerAPI, sendOTP, validateMobileAPI } from "./PublicAccessControllers.js";
 
 const PublicAPI = {
   sendOtpAPI: sendOTP,

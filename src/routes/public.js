@@ -1,5 +1,6 @@
 import express from "express";
 import { PublicAPI } from "../controllers/index.js";
+import { fetchBanner, getProduct } from "../controllers/PublicAccessControllers.js";
 
 const router = express.Router();
 
@@ -174,5 +175,9 @@ router.post("/admin-login", PublicAPI.adminLoginAPI);
  *         description: No products found
  */
 router.get("/get-all-products",PublicAPI.getAllProductsAPI)
+
+router.get("/get-one-product",getProduct)
+
+router.get("/fetch-banner", fetchBanner)
 
 export { router };

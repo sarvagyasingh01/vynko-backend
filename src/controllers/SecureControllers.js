@@ -1,3 +1,4 @@
+import { Banner } from "../models/assets/bannerSchema.js";
 import Cart from "../models/cart/cartSchema.js";
 import { Product } from "../models/product/productSchema.js";
 import { Review } from "../models/product/reviewSchema.js";
@@ -229,5 +230,21 @@ const createReview = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+const createBanner = async () => {
+  try {
+    const banner = new Banner({
+      bannerId: "banner0001",
+      headerActive: true,
+    });
+
+    const savedBanner = await banner.save();
+    return savedBanner;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
 
 export { createCart, updateCart, createReview};

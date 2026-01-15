@@ -1,13 +1,43 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
-import { type } from "os";
 
 const { Schema } = mongoose;
 
 const BannerSchema = new Schema(
   {
-    url: String,
-    public_id: String,
+    bannerId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    headerActive: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+
+    headerText: {
+      type: String,
+      trim: true,
+    },
+
+    desktopImage: [{
+      url: {
+        type: String,
+      },
+      public_id: {
+        type: String,
+      },
+    }],
+
+    mobileImage: [{
+      url: {
+        type: String,
+      },
+      public_id: {
+        type: String,
+      },
+    }],
   },
   { timestamps: true }
 );

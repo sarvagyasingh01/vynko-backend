@@ -3,7 +3,8 @@ import Cart from "../models/cart/cartSchema.js";
 import { Users } from "../models/index.js";
 import { Product } from "../models/product/productSchema.js";
 import moment from "moment";
-import { deleteProductImage, uploadProductImage } from "../util/coudinary.js";
+import { deleteProductImage, uploadBannerImage, uploadProductImage } from "../util/coudinary.js";
+import { Banner } from "../models/assets/bannerSchema.js";
 
 const addProduct = async (req, res) => {
   const { name, price, discountPrice, description, stock, sizes } = req.body;
@@ -434,6 +435,126 @@ const editProductImages = async (req, res) => {
   }
 };
 
+
+const editHeader = async (req, res) => {
+  const { headerText, headerActive } = req.body;
+
+  try {
+    const banner = await Banner.findOne({
+      bannerId: "VYNKO-MAIN-BANNER",
+    });
+
+    if (!banner) {
+      return res.status(400).json({
+        success: false,
+        message: "Banner not found!",
+      });
+    }
+
+    const updateData = {};
+
+    if (headerText !== undefined) {
+      updateData.headerText = headerText;
+    }
+
+    if (headerActive !== undefined) {
+      updateData.headerActive = headerActive;
+    }
+
+    const bannerUpdate = await Banner.findOneAndUpdate(
+      { bannerId: "VYNKO-MAIN-BANNER" },
+      { $set: updateData },
+      { new: true }
+    );
+
+    return res.status(201).json({
+      message: "Header updated successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+const updateBannerImages = async (req, res) => {
+  const { type } = req.body; // "desktop" | "mobile"
+  const images = req.files;
+
+  if (!type || !["desktop", "mobile"].includes(type)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid banner image type.",
+    });
+  }
+
+  if (!images || images.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "No images uploaded.",
+    });
+  }
+
+  try {
+    const banner = await Banner.findOne({
+      bannerId: "VYNKO-MAIN-BANNER",
+    });
+
+    if (!banner) {
+      return res.status(404).json({
+        success: false,
+        message: "Banner not found.",
+      });
+    }
+
+    // 🔥 Delete old images
+    const oldImages =
+      type === "desktop" ? banner.desktopImage : banner.mobileImage;
+
+    const deletePromises = oldImages.map((img) =>
+      deleteProductImage(img.public_id)
+    );
+    await Promise.all(deletePromises);
+
+    // 📤 Upload new images
+    const uploadedImages = [];
+
+    for (const file of images) {
+      const result = await uploadBannerImage(file.buffer);
+      uploadedImages.push({
+        url: result.secure_url,
+        public_id: result.public_id,
+      });
+    }
+
+    // 🧠 Replace images
+    if (type === "desktop") {
+      banner.desktopImage = uploadedImages;
+    } else {
+      banner.mobileImage = uploadedImages;
+    }
+
+    await banner.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `${type === "desktop" ? "Desktop" : "Mobile"
+        } banner images updated successfully.`,
+      data: {
+        banner,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating banner images:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
 export {
   addProduct,
   updateProduct,
@@ -442,5 +563,7 @@ export {
   changeProductStatus,
   deleteProduct,
   editProductImages,
+  editHeader,
+  updateBannerImages,
   
 };
