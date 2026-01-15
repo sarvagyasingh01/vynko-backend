@@ -11,6 +11,7 @@ import { getIstTime } from "../config/getTime.js";
 import GenerateUserId from "../config/generateUserId.js";
 import { Product } from "../models/product/productSchema.js";
 import axios from "axios";
+import { Banner } from "../models/assets/bannerSchema.js";
 
 const sendOTP = async (req, res) => {
   let post = req.body;
@@ -571,6 +572,48 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const getProduct = async (req, res) => {
+  try {
+    const { productId } = req.query;
+
+    if (!productId || typeof productId !== "string") {
+      return res.status(400).json({ message: "Product Id is required" });
+    }
+
+    const product = await Product.findOne({ productId }).lean();
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    return res.status(200).json( product );
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const fetchBanner = async (req, res) => {
+  try {
+    const banner = await Banner.findOne({bannerId: "VYNKO-MAIN-BANNER"});
+
+    if (!banner) {
+      return res.status(404).json({
+        success: false,
+        message: "Banner not found",
+      });
+    }
+
+    res.status(200).json(banner);
+  } catch (error) {
+    console.log(error)
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
 export {
   sendOTP,
   checkOtpMatchAPI,
@@ -579,5 +622,7 @@ export {
   loginAPI,
   validateMobileAPI,
   adminLoginAPI,
-  getAllProducts
+  getAllProducts,
+  getProduct,
+  fetchBanner,
 };

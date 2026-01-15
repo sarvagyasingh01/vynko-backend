@@ -8,8 +8,10 @@ import {
   addProduct,
   changeProductStatus,
   deleteProduct,
+  editHeader,
   editProductImages,
   getAllProducts,
+  updateBannerImages,
   updateProduct,
   userStats,
 } from "../controllers/PrivateControllers.js";
@@ -213,6 +215,11 @@ router.post("/change-product-status", changeProductStatus)
 router.post("/delete-product", deleteProduct)
 
 router.post("/update-product-images/:productId", upload.array("images", 5), editProductImages);
+
+router.post("/update-header", editHeader)
+
+router.post("/update-banner-images", upload.array("images", 5), updateBannerImages);
+
 
 
 export { router };
