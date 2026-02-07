@@ -27,6 +27,7 @@ const corsOptions = {
     "http://localhost:5173",
     "https://vynko-adminpanel.vercel.app",
     "https://vynko-main.vercel.app",
+    "https://www.vynko.in",
     
   ],
   optionsSuccessStatus: 200,
